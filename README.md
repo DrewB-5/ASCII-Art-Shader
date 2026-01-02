@@ -1,5 +1,8 @@
 # ASCII Image to Text Renderer
 
+![Original Image](docs/before.png)
+![ASCII Output](docs/after.png)
+
 This project converts an input image into high‑resolution **ASCII art** using image processing techniques implemented in **C++**, and displays the result using a **Python Tkinter viewer**.
 
 At its core, the program performs **edge detection, contrast enhancement, and brightness-based character mapping** to produce visually sharp ASCII output suitable for fullscreen display.
