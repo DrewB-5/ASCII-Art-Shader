@@ -1,7 +1,8 @@
 # ASCII Image to Text Renderer
 
-![Original Image](docs/before.jpg)
-![ASCII Output](docs/after.jpg)
+| Original Image | ASCII Output |
+|---------------|--------------|
+| ![Before](docs/before.jpg) | ![After](docs/after.jpg) |
 
 This project converts an input image into high‑resolution **ASCII art** using image processing techniques implemented in **C++**, and displays the result using a **Python Tkinter viewer**.
 
