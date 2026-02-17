@@ -1,10 +1,11 @@
+cat << 'EOF' > README.md
 # ASCII Image to Text Renderer
 
 | Original Image | ASCII Output |
 |---------------|--------------|
 | ![Before](docs/before.jpg) | ![After](docs/after.jpg) |
 
-This project converts an input image into high‑resolution **ASCII art** using image processing techniques implemented in **C++**, and displays the result using a **Python Tkinter viewer**.
+This project converts an input image into high-resolution **ASCII art** using image processing techniques implemented in **C++**, and displays the result using a **Python Tkinter viewer**. Additionally, it now supports **real-time screen capture and video-to-ASCII rendering**.
 
 At its core, the program performs **edge detection, contrast enhancement, and brightness-based character mapping** to produce visually sharp ASCII output suitable for fullscreen display.
 
@@ -12,132 +13,150 @@ At its core, the program performs **edge detection, contrast enhancement, and br
 
 ## Features
 
-* Grayscale image loading via `stb_image`
-* Gaussian blur for noise reduction
-* Sobel gradient edge detection
-* Non‑maximum suppression (Canny‑style thinning)
-* Hysteresis thresholding for clean edges
-* Directional edge characters (`|`, `-`, `/`, `\\`)
-* Adaptive gamma correction for improved contrast
-* Brightness‑based ASCII character mapping
-* Binary output stream for fast IPC
+- Grayscale image loading via `stb_image`
+- Gaussian blur for noise reduction
+- Sobel gradient edge detection
+- Non-maximum suppression (Canny-style thinning)
+- Hysteresis thresholding for clean edges
+- Directional edge characters (`|`, `-`, `/`, `\\`)
+- Adaptive gamma correction for improved contrast
+- Brightness-based ASCII character mapping
+- Binary output stream for fast IPC
+- **Real-time screen/video capture**
+- **FPS display** for performance monitoring
 
 ---
 
 ## Project Structure
 
-```
 .
-├── ascii.cpp        # C++ image → ASCII converter (this project)
-├── ascii.exe        # Compiled binary
-├── viewer.py        # Python fullscreen ASCII viewer
-├── stb_image.h      # Image loading library
-└── image.png        # Input image
-```
+├── ascii.cpp           # C++ image → ASCII converter
+├── ascii.exe           # Compiled image binary
+├── viewer.py           # Python fullscreen ASCII viewer
+├── stb_image.h         # Image loading library
+├── image.png           # Input image
+└── video_capture.cpp   # C++ real-time screen/video ASCII renderer
 
 ---
 
 ## How It Works (High Level)
 
-```
-Image
- ↓
-Grayscale
- ↓
-Gaussian Blur
- ↓
-Sobel Gradients
- ↓
-Non‑Maximum Suppression
- ↓
-Hysteresis Thresholding
- ↓
-Directional Edge Mapping
- ↓
-Gamma Correction
- ↓
-ASCII Mapping
- ↓
-Binary Output
-```
+### Static Image Rendering
 
-The C++ program outputs a **binary stream** describing the ASCII frame, which the Python viewer reads and renders in real time.
+Image  
+↓  
+Grayscale  
+↓  
+Gaussian Blur  
+↓  
+Sobel Gradients  
+↓  
+Non-Maximum Suppression  
+↓  
+Hysteresis Thresholding  
+↓  
+Directional Edge Mapping  
+↓  
+Gamma Correction  
+↓  
+ASCII Mapping  
+↓  
+Binary Output  
+
+### Real-Time Screen/Video Rendering
+
+Screen Capture / Video Frame  
+↓  
+Downscale & Grayscale  
+↓  
+Approximate Sobel Edge Detection  
+↓  
+ASCII Mapping (edges override brightness)  
+↓  
+Render to Window via Win32 GDI  
+↓  
+FPS Display Overlay  
+
+The real-time renderer captures the screen at ~30 FPS, downsamples it, applies a Sobel-style edge filter, maps pixel intensity and edges to ASCII characters, and renders the result directly in a Win32 window.
 
 ---
 
 ## Compilation (C++)
 
-Compile the ASCII renderer with full optimization:
+### Static Image Renderer
 
-```bash
 g++ -O3 -march=native -flto ascii.cpp -o ascii
-```
 
-### Explanation
+### Real-Time Screen Capture Renderer (Windows Only)
 
-* `-O3` – Maximum compiler optimizations
-* `-march=native` – Enables CPU‑specific SIMD instructions
-* `-flto` – Link‑time optimization for additional speed
+g++ -O3 -march=native -flto video_capture.cpp -o video_ascii.exe -lgdi32 -luser32
 
-> This build is optimized for performance.
+### Optimization Flags
+
+- -O3 – Maximum compiler optimizations  
+- -march=native – Enables CPU-specific SIMD instructions  
+- -flto – Link-time optimization for additional speed  
+
+Both builds are optimized for performance.
 
 ---
 
 ## Usage
 
-### 1. Run the C++ ASCII generator directly
+### 1. Run the C++ ASCII generator directly (image mode)
 
-```bash
 ./ascii image.png > output.bin
-```
 
-This writes a binary ASCII frame to `stdout`.
+This writes a binary ASCII frame to stdout.
 
 ---
 
-### 2. View the ASCII output (recommended)
+### 2. View the ASCII output (recommended for images)
 
-Use the Python viewer to display the ASCII art fullscreen:
-
-```bash
-python renderer.py image.png
-```
+python viewer.py image.png
 
 #### Controls
 
-* **Mouse click** – Exit
-* **Escape key** – Exit
+- Mouse click – Exit  
+- Escape key – Exit  
 
 ---
 
-## Output Format (Binary Protocol)
+### 3. Run Real-Time Screen ASCII Renderer (Windows)
 
-The C++ program writes data in the following format:
+./video_ascii.exe
 
-1. `uint32_t` – ASCII width
-2. `uint32_t` – ASCII height
+#### Features
+
+- Captures the desktop screen in real time  
+- Converts frames to ASCII with edge enhancement  
+- Displays live FPS in the top corner  
+- Uses Win32 GDI for rendering  
+- Close window or press Escape to exit  
+
+---
+
+## Output Format (Binary Protocol – Image Renderer Only)
+
+The static image renderer writes:
+
+1. uint32_t – ASCII width  
+2. uint32_t – ASCII height  
 3. For each cell:
+   - uint8_t – UTF-8 byte length  
+   - N bytes – UTF-8 encoded character  
 
-   * `uint8_t` – UTF‑8 byte length
-   * `N bytes` – UTF‑8 encoded character
-
-This allows:
-
-* Unicode characters
-* Fast streaming
-* Language‑agnostic parsing
+The real-time renderer draws directly to a window and does not output a binary stream.
 
 ---
 
 ## ASCII Character Set
 
-Characters are ordered by visual density:
-
-```
 " " . : c o P 0 ? @ ■
-```
 
-Edges override brightness mapping using directional symbols.
+For real-time rendering, detected edges are displayed as:
+
+#
 
 ---
 
@@ -145,36 +164,40 @@ Edges override brightness mapping using directional symbols.
 
 ### C++
 
-* C++17 or newer
-* [`stb_image.h`](https://github.com/nothings/stb)
-* GCC / Clang recommended
+- C++17 or newer  
+- stb_image.h (image renderer only)  
+- GCC / Clang / MSVC  
+- Windows (required for real-time screen capture)  
 
-### Python
+### Python (Image Viewer Only)
 
-* Python 3.8+
-* Tkinter (included with most Python installs)
+- Python 3.8+  
+- Tkinter (included with most Python installs)  
 
 ---
 
 ## Notes
 
-* Designed for **static images** (not video)
-* Optimized for **fullscreen ASCII rendering**
-* Output is deterministic for a given image
-* Unicode output requires UTF‑8 capable terminal/viewer
+- Supports static image rendering and real-time screen capture  
+- Optimized for fullscreen ASCII display  
+- Deterministic output for identical image input  
+- Unicode output requires UTF-8 capable terminal/viewer  
+- Real-time renderer defaults to ~30 FPS  
 
 ---
 
 ## Future Improvements
 
-* Real‑time video / webcam support
-* Multi‑frame animation streaming
-* Adjustable ASCII resolution
-* GPU acceleration
-* Cross‑platform console renderer
+- Real-time webcam support  
+- Multi-frame animation streaming  
+- Adjustable ASCII resolution  
+- GPU acceleration  
+- Cross-platform console renderer  
+- Advanced edge detection for video frames  
 
 ---
 
 ## License
 
-This project is provided as‑is for educational and experimental purposes.
+This project is provided as-is for educational and experimental purposes.
+EOF
